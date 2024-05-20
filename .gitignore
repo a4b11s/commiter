@@ -5,4 +5,4 @@
 /lib64/
 /models/
 /.idle/
-__pycache__
+__pycache__/
