@@ -1,6 +1,5 @@
 import keras
-from layers.EncoderLayer import EncoderLayer
-from layers.PositionalEmbedding import PositionalEmbedding
+from layers import EncoderLayer, PositionalEmbedding
 
 
 class Encoder(keras.layers.Layer):
@@ -33,3 +32,21 @@ class Encoder(keras.layers.Layer):
             x = self.enc_layers[i](x)
 
         return x  # Shape `(batch_size, seq_len, d_model)`.
+
+    def build(self, input_shape):
+        super().build(input_shape)
+        self.pos_embedding.build(input_shape)
+        for enc_l in self.enc_layers:
+            enc_l.build(input_shape)
+
+    def compute_mask(self, inputs, mask=None):
+        # Passes the mask through the last encoder layer
+        return self.enc_layers[-1].compute_mask(inputs, mask)
+
+    def compute_output_shape(self, input_shape):
+        # Output shape is the same as input shape
+        return input_shape
+
+    def compute_output_spec(self, input_spec):
+        # Output spec is the same as input spec
+        return input_spec

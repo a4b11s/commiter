@@ -1,4 +1,3 @@
-from keras import layers
 import numpy as np
 import tensorflow as tf
 
@@ -24,9 +23,6 @@ class PositionalEmbedding(tf.keras.layers.Layer):
         self.embedding = tf.keras.layers.Embedding(vocab_size, d_model, mask_zero=True)
         self.pos_encoding = positional_encoding(length=2048, depth=d_model)
 
-    def compute_mask(self, *args, **kwargs):
-        return self.embedding.compute_mask(*args, **kwargs)
-
     def call(self, x):
         length = tf.shape(x)[1]
         x = self.embedding(x)
@@ -34,3 +30,17 @@ class PositionalEmbedding(tf.keras.layers.Layer):
         x *= tf.math.sqrt(tf.cast(self.d_model, tf.float32))
         x = x + self.pos_encoding[tf.newaxis, :length, :]
         return x
+
+    def compute_mask(self, *args, **kwargs):
+        return self.embedding.compute_mask(*args, **kwargs)
+
+    def build(self, input_shape):
+        super().build(input_shape)
+
+    def compute_output_shape(self, input_shape):
+        return input_shape + (self.d_model,)
+
+    def compute_output_spec(self, input_spec):
+        return input_spec + (
+            tf.TensorSpec(shape=(None, self.d_model), dtype=tf.float32),
+        )

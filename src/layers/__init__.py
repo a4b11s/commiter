@@ -1,4 +1,7 @@
-from .Attention import *
+from .BaseAttention import *
+from .CausalSelfAttention import *
+from .CrossAttention import *
+from .GlobalSelfAttention import *
 
 from .FeedForward import *
 
@@ -9,4 +12,3 @@ from .Encoder import *
 from .Decoder import *
 
 from .PositionalEmbedding import *
-from .TransformerBlock import *

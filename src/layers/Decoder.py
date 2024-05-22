@@ -1,6 +1,5 @@
 import keras
-from layers.PositionalEmbedding import PositionalEmbedding
-from layers.DecoderLayer import DecoderLayer
+from layers import PositionalEmbedding, DecoderLayer
 
 
 class Decoder(keras.layers.Layer):
@@ -36,3 +35,21 @@ class Decoder(keras.layers.Layer):
 
         # The shape of x is (batch_size, target_seq_len, d_model).
         return x
+
+    def build(self, input_shape):
+        super().build(input_shape)
+        self.pos_embedding.build(input_shape)
+        for dec_l in self.dec_layers:
+            dec_l.build(input_shape)
+
+    def compute_mask(self, inputs, mask=None):
+        # Passes the mask through the last decoder layer
+        return self.dec_layers[-1].compute_mask(inputs, mask)
+
+    def compute_output_shape(self, input_shape):
+        # Output shape is the same as input shape
+        return input_shape
+
+    def compute_output_spec(self, input_spec):
+        # Output spec is the same as input spec
+        return input_spec

@@ -1,6 +1,5 @@
 import keras
-from layers.Attention import CausalSelfAttention, CrossAttention
-from layers.FeedForward import FeedForward
+from layers import CausalSelfAttention, CrossAttention, FeedForward
 
 
 class DecoderLayer(keras.layers.Layer):
@@ -26,3 +25,21 @@ class DecoderLayer(keras.layers.Layer):
 
         x = self.ffn(x)  # Shape `(batch_size, seq_len, d_model)`.
         return x
+
+    def build(self, input_shape):
+        self.causal_self_attention.build(input_shape)
+        self.cross_attention.build(input_shape)
+        self.ffn.build(input_shape)
+        super().build(input_shape)
+
+    def compute_mask(self, inputs, mask=None):
+        # The causal self-attention layer should receive the mask
+        return self.causal_self_attention.compute_mask(inputs, mask)
+
+    def compute_output_shape(self, input_shape):
+        # Output shape is the same as input shape
+        return input_shape
+
+    def compute_output_spec(self, input_spec):
+        # Output spec is the same as input spec
+        return input_spec

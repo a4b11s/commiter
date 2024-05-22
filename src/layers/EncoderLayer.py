@@ -1,6 +1,5 @@
 import keras
-from layers.Attention import GlobalSelfAttention
-from layers.FeedForward import FeedForward
+from layers import GlobalSelfAttention, FeedForward
 
 
 class EncoderLayer(keras.layers.Layer):
@@ -17,3 +16,20 @@ class EncoderLayer(keras.layers.Layer):
         x = self.self_attention(x)
         x = self.ffn(x)
         return x
+
+    def build(self, input_shape):
+        self.self_attention.build(input_shape)
+        self.ffn.build(input_shape)
+        super().build(input_shape)
+
+    def compute_mask(self, inputs, mask=None):
+        # Passes the mask through the self-attention layer
+        return self.self_attention.compute_mask(inputs, mask)
+
+    def compute_output_shape(self, input_shape):
+        # Output shape is the same as input shape
+        return input_shape
+
+    def compute_output_spec(self, input_spec):
+        # Output spec is the same as input spec
+        return input_spec
