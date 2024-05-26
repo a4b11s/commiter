@@ -1,6 +1,6 @@
 import keras
-from layers import EncoderLayer, PositionalEmbedding
-
+from .encoder_layer import EncoderLayer
+from .positional_embedding import PositionalEmbedding
 
 class Encoder(keras.layers.Layer):
     def __init__(

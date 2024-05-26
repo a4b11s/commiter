@@ -1,5 +1,6 @@
 import keras
-from layers import GlobalSelfAttention, FeedForward
+from .global_self_attention import GlobalSelfAttention
+from .feed_forward import FeedForward
 
 
 class EncoderLayer(keras.layers.Layer):

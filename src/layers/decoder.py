@@ -1,5 +1,6 @@
 import keras
-from layers import PositionalEmbedding, DecoderLayer
+from .decoder_layer import DecoderLayer
+from .positional_embedding import PositionalEmbedding
 
 
 class Decoder(keras.layers.Layer):

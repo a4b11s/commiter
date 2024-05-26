@@ -1,5 +1,7 @@
 import keras
-from layers import CausalSelfAttention, CrossAttention, FeedForward
+from .causal_self_attention import CausalSelfAttention
+from .cross_attention import CrossAttention
+from .feed_forward import FeedForward
 
 
 class DecoderLayer(keras.layers.Layer):

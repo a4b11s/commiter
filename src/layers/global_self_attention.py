@@ -1,4 +1,4 @@
-from layers import BaseAttention
+from .base_attention import BaseAttention
 
 
 class GlobalSelfAttention(BaseAttention):
