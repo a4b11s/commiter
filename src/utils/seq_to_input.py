@@ -1,19 +1,11 @@
 import tensorflow as tf
-import timeit
+
 
 @tf.function
 def zeros_pad_to_maxlen(val, maxlen):
-    val = tf.convert_to_tensor(val, dtype=tf.float32)
-    val_shape = tf.shape(val)[0]
-    pad_len = maxlen - val_shape
-    
-    def pad_tensor():
-        return tf.pad(val, [[0, pad_len]], constant_values=0.0)
-    
-    def no_pad():
-        return val
-    
-    return tf.cond(pad_len > 0, pad_tensor, no_pad)
+    padding = tf.zeros([maxlen - tf.shape(val)[0]], dtype=tf.float32)
+    return tf.concat([val, padding], axis=0)
+
 
 @tf.function
 def seq_to_input(x, y, maxlen):
@@ -56,17 +48,3 @@ def seq_to_input(x, y, maxlen):
     dataset = tf.data.Dataset.from_tensor_slices((y_batch, padded_target_batch))
 
     return dataset
-
-
-def test(ds_c, maxlen, buffer_size):
-    dummy = tf.data.Dataset.from_tensor_slices(
-        (
-            tf.random.uniform((ds_c, maxlen), dtype=tf.float32),
-            tf.random.uniform((ds_c, maxlen), dtype=tf.float32),
-        )
-    )
-
-    dummy.flat_map(lambda x, y: seq_to_input(x, y, maxlen))
-    dummy.prefetch(buffer_size)
-    for _ in dummy:
-        pass
