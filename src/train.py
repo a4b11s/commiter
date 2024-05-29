@@ -1,27 +1,12 @@
 import tensorflow as tf
-import tensorboard
 import keras
 
-from tensorflow import data as tf_data
-
-from data import BertProcessor, TextVectorizationProcessor, DataProcessor
+from data import DataPipline
 from models import Transformer
 from losses import masked_loss
 from metrics import masked_accuracy
-from utils import CustomSchedule, seq_to_input
+from utils import CustomSchedule
 from config import Config
-
-
-def dataset_prepare(
-    dataset: tf_data.Dataset, pipline_buffer, batch_size, repeat_count=100000
-):
-    return (
-        dataset.batch(
-            batch_size, drop_remainder=True, num_parallel_calls=tf_data.AUTOTUNE
-        )
-        .repeat(repeat_count)
-        .prefetch(buffer_size=pipline_buffer)
-    )
 
 
 def train_model():
@@ -43,37 +28,16 @@ def train_model():
 
     steps_per_epoch = int(element_per_epoch / batch_size)
 
-    # Prepare dataset
-    dataset = tf_data.experimental.CsvDataset(
-        dataset_path,
-        record_defaults=[tf.string, tf.string],
-        buffer_size=pipline_buffer,
-        select_cols=[0, 1],
-    )
-    dataset.batch(batch_size, drop_remainder=True, num_parallel_calls=tf_data.AUTOTUNE)
-    input_dataset = dataset.map(lambda x, _: x, num_parallel_calls=tf_data.AUTOTUNE)
-    input_processor: DataProcessor = TextVectorizationProcessor(
+    data_pipline = DataPipline(
+        dataset_path=dataset_path,
+        batch_size=batch_size,
+        pipline_buffer=pipline_buffer,
+        repeat_count=1000,
         sequence_length=sequence_length,
-        vocab_size=input_vocab_size,
-        vocab_path=path_to_vocab,
-        dataset=input_dataset,
+        input_vocab_size=input_vocab_size,
+        path_to_vocab=path_to_vocab,
         adapt_steps=adapt_steps,
-        verbose=True,
     )
-    output_processor: DataProcessor = BertProcessor()
-
-    @tf.function
-    def tokenize(x, y):
-        x = input_processor.tokenize(x)
-        y = output_processor.preprocess(y)
-        y = output_processor.tokenize(y)
-
-        return x, y
-
-    dataset = dataset.map(tokenize, num_parallel_calls=tf_data.AUTOTUNE).cache()
-    dataset = dataset.flat_map(lambda x, y: seq_to_input(x, y, sequence_length)).cache()
-
-    dataset = dataset_prepare(dataset, pipline_buffer, batch_size)
 
     transformer = Transformer(
         num_layers=num_layers,
@@ -81,7 +45,7 @@ def train_model():
         num_heads=num_heads,
         dff=dff,
         input_vocab_size=input_vocab_size,
-        target_vocab_size=output_processor.vocab_size,
+        target_vocab_size=data_pipline.output_processor.vocab_size,
         dropout_rate=dropout_rate,
     )
 
@@ -116,12 +80,13 @@ def train_model():
         loss=masked_loss, optimizer=optimizer, metrics=[masked_accuracy]
     )
 
+    trian_ds, val_ds = data_pipline.get_dataset(validation_size=500)
+
     transformer.fit(
-        dataset,
+        trian_ds,
         verbose=1,
         steps_per_epoch=steps_per_epoch,
         epochs=1000,
         callbacks=callbacks,
+        validation_data=val_ds,
     )
-
-    print("Training finished")
