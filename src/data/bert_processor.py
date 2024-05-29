@@ -4,13 +4,13 @@ import re
 
 from tensorflow import strings as tf_strings
 
-from data import DataProcessor
+from .data_processor import DataProcessor
 
 
 class BertProcessor(DataProcessor):
     def __init__(
         self,
-        sequence_length: int,
+        sequence_length: int | None = None,
         vocab_size: int | None = None,
         bert_tokenizer_preset: str = "bert_small_en_uncased",
     ):
@@ -18,7 +18,8 @@ class BertProcessor(DataProcessor):
             bert_tokenizer_preset
         )
 
-        self.bert_tokenizer.sequence_length = sequence_length
+        if sequence_length is not None:
+            self.bert_tokenizer.sequence_length = sequence_length
 
         self.vocab_size: int = self.bert_tokenizer.vocabulary_size()
 

@@ -7,7 +7,7 @@ import os
 from tensorflow import strings as tf_strings
 from keras import layers
 
-from data import DataProcessor
+from .data_processor import DataProcessor
 
 
 class TextVectorizationProcessor(DataProcessor):
@@ -18,6 +18,7 @@ class TextVectorizationProcessor(DataProcessor):
         vocab_path: str | None = None,
         dataset: tf.data.Dataset | None = None,
         adapt_steps: int = 5000,
+        own_tokens: list[str] = [],
         verbose: bool = False,
     ):
         self.tokenizer: layers.TextVectorization = layers.TextVectorization(
@@ -26,7 +27,8 @@ class TextVectorizationProcessor(DataProcessor):
             split="character",
             output_mode="int",
             output_sequence_length=sequence_length,
-            max_tokens=vocab_size - 1,
+            max_tokens=vocab_size,
+            pad_to_max_tokens=False,
         )
 
         self.verbose = verbose
@@ -39,6 +41,8 @@ class TextVectorizationProcessor(DataProcessor):
             try:
                 self.vocabulary_from_file()
                 self.vocab_loaded = True
+                if self.verbose:
+                    print(f"Vocabulary loaded from {vocab_path}")
             except FileNotFoundError:
                 if self.verbose:
                     print(f"File not found: {vocab_path}. Vocabulary not loaded")
@@ -51,6 +55,11 @@ class TextVectorizationProcessor(DataProcessor):
         except FileNotFoundError:
             if self.verbose:
                 print(f"Vocabulary not saved to {self.vocab_path}")
+
+        if len(own_tokens) == 0:
+            own_tokens = ["[BOS]", "[EOS]"]
+
+        self.tokenizer.set_vocabulary(self.tokenizer.get_vocabulary()[:-len(own_tokens)] + own_tokens)
 
         self.dict: list[str] = self.tokenizer.get_vocabulary()
 
