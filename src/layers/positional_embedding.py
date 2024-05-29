@@ -37,11 +37,3 @@ class PositionalEmbedding(layers.Layer):
 
     def build(self, input_shape):
         super().build(input_shape)
-
-    def compute_output_shape(self, input_shape):
-        return input_shape + (self.d_model,)
-
-    def compute_output_spec(self, input_spec):
-        return input_spec + (
-            tf.TensorSpec(shape=(None, self.d_model), dtype=tf.float32),
-        )

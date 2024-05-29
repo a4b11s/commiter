@@ -47,10 +47,11 @@ class Decoder(keras.layers.Layer):
         # Passes the mask through the last decoder layer
         return self.dec_layers[-1].compute_mask(inputs, mask)
 
-    def compute_output_shape(self, input_shape):
-        # Output shape is the same as input shape
-        return input_shape
+    def compute_output_shape(self, x_shape, context_shape):
+        emb_output_shape = self.pos_embedding.compute_output_shape(x_shape)
+        dropout_shape = self.dropout.compute_output_shape(emb_output_shape)
+        dec_output_shape = self.dec_layers[-1].compute_output_shape(
+            dropout_shape, context_shape
+        )
 
-    def compute_output_spec(self, input_spec):
-        # Output spec is the same as input spec
-        return input_spec
+        return dec_output_shape

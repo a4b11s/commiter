@@ -21,3 +21,9 @@ class CrossAttention(BaseAttention):
         if mask is not None and isinstance(mask, list) and len(mask) == 2:
             return mask[0]
         return mask
+
+    def compute_output_shape(self, x_shape, context_shape):
+        attn_output_shape = self.mha.compute_output_shape(x_shape, context_shape, context_shape)
+        add_output_shape = self.add.compute_output_shape([x_shape, attn_output_shape])
+        layernorm_output_shape = self.layernorm.compute_output_shape(add_output_shape)
+        return layernorm_output_shape

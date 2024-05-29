@@ -38,10 +38,14 @@ class DecoderLayer(keras.layers.Layer):
         # The causal self-attention layer should receive the mask
         return self.causal_self_attention.compute_mask(inputs, mask)
 
-    def compute_output_shape(self, input_shape):
-        # Output shape is the same as input shape
-        return input_shape
+    def compute_output_shape(self, x_shape, context_shape):
+        self_attn_output_shape = self.causal_self_attention.compute_output_shape(
+            x_shape
+        )
+        cross_attn_output_shape = self.cross_attention.compute_output_shape(
+            self_attn_output_shape, context_shape
+        )
 
-    def compute_output_spec(self, input_spec):
-        # Output spec is the same as input spec
-        return input_spec
+        fnn_output_shape = self.ffn.compute_output_shape(cross_attn_output_shape)
+
+        return fnn_output_shape

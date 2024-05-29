@@ -1,5 +1,5 @@
 from .base_attention import BaseAttention
-
+import tensorflow as tf
 
 class GlobalSelfAttention(BaseAttention):
     def call(self, x):

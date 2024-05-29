@@ -23,14 +23,7 @@ class EncoderLayer(keras.layers.Layer):
         self.ffn.build(input_shape)
         super().build(input_shape)
 
-    def compute_mask(self, inputs, mask=None):
-        # Passes the mask through the self-attention layer
-        return self.self_attention.compute_mask(inputs, mask)
-
     def compute_output_shape(self, input_shape):
-        # Output shape is the same as input shape
-        return input_shape
-
-    def compute_output_spec(self, input_spec):
-        # Output spec is the same as input spec
-        return input_spec
+        attn_output_shape = self.self_attention.compute_output_shape(input_shape)
+        ffn_shape = self.ffn.compute_output_shape(attn_output_shape)
+        return ffn_shape

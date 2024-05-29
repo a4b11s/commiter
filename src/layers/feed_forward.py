@@ -19,14 +19,11 @@ class FeedForward(layers.Layer):
         x = self.layer_norm(x)
         return x
 
-    def build(self, input_shape):
-        self.seq.build(input_shape)
-        self.add.build([input_shape, input_shape])
-        self.layer_norm.build(input_shape)
-        super().build(input_shape)
-
     def compute_mask(self, inputs, mask=None):
-        return mask
+        seq_mask = self.seq.compute_mask(inputs, mask)
+        add_mask = self.add.compute_mask(inputs, seq_mask)
+        norm_mask = self.layer_norm.compute_mask(inputs, add_mask)
+        return norm_mask
 
     def compute_output_shape(self, input_shape):
         return input_shape

@@ -6,3 +6,5 @@
 /models/
 /.idle/
 __pycache__/
+/data/
+/lib64/

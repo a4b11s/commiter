@@ -5,7 +5,7 @@ class Translator(tf.Module):
     self.tokenizers = tokenizers
     self.transformer = transformer
 
-  def __call__(self, sentence, max_length=MAX_TOKENS):
+  def __call__(self, sentence, max_length=300):
     # The input sentence is Portuguese, hence adding the `[START]` and `[END]` tokens.
     assert isinstance(sentence, tf.Tensor)
     if len(sentence.shape) == 0:
@@ -44,9 +44,9 @@ class Translator(tf.Module):
 
     output = tf.transpose(output_array.stack())
     # The output shape is `(1, tokens)`.
-    text = tokenizers.en.detokenize(output)[0]  # Shape: `()`.
+    text = self.tokenizers.en.detokenize(output)[0]  # Shape: `()`.
 
-    tokens = tokenizers.en.lookup(output)[0]
+    tokens = self.tokenizers.en.lookup(output)[0]
 
     # `tf.function` prevents us from using the attention_weights that were
     # calculated on the last iteration of the loop.

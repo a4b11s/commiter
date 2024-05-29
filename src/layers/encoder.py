@@ -2,6 +2,8 @@ import keras
 from .encoder_layer import EncoderLayer
 from .positional_embedding import PositionalEmbedding
 
+import tensorflow as tf
+
 class Encoder(keras.layers.Layer):
     def __init__(
         self, *, num_layers, d_model, num_heads, dff, vocab_size, dropout_rate=0.1
@@ -44,8 +46,11 @@ class Encoder(keras.layers.Layer):
         return self.enc_layers[-1].compute_mask(inputs, mask)
 
     def compute_output_shape(self, input_shape):
-        # Output shape is the same as input shape
-        return input_shape
+        emb_shape = self.pos_embedding.compute_output_shape(input_shape)
+        dropout_shape = self.dropout.compute_output_shape(emb_shape)
+        enc_layer_shape = self.enc_layers[-1].compute_output_shape(dropout_shape)
+        
+        return enc_layer_shape
 
     def compute_output_spec(self, input_spec):
         # Output spec is the same as input spec
