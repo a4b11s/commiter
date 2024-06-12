@@ -49,6 +49,11 @@ def train_model():
         dropout_rate=dropout_rate,
     )
 
+    try:
+        transformer.load_weights(Config.config["chp_path"])
+    except:
+        print("Model not found")
+
     callbacks = [
         keras.callbacks.ModelCheckpoint(
             Config.config["chp_path"], save_weights_only=True, verbose=1

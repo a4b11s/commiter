@@ -3,13 +3,13 @@ class DataProcessor:
         pass
 
     def preprocess(self, text):
-        pass
+        return text
 
     def postprocess(self, text):
-        pass
+        return text
 
     def tokenize(self, text):
-        pass
+        raise NotImplementedError()
 
     def detokenize(self, text):
-        pass
+        raise NotImplementedError()

@@ -2,68 +2,61 @@ import tensorflow as tf
 
 
 class TransformerGenerator(tf.Module):
-    def __init__(self, transformer_model):
-        super().__init__()
-        self.transformer_model = transformer_model
-
-    @tf.function(
-        input_signature=[
-            tf.TensorSpec(shape=[None, None], dtype=tf.int64),
-            tf.TensorSpec(shape=[None], dtype=tf.int64),
-            tf.TensorSpec(shape=[], dtype=tf.int32),
-        ]
-    )
-    def generate(self, context, start_token, max_length):
+    def __init__(
+        self, transformer_model, start_token_idx, end_token_idx, max_sequence_length=100
+    ):
         """
-        Generate a sequence given the initial context and start token.
+        Initialize the Sequence Generator module.
 
         Args:
-            context: Tensor of shape (batch_size, context_len) - the input context.
-            start_token: Tensor of shape (batch_size,) - the initial token to start the generation.
-            max_length: int - the maximum length of the generated sequence.
+        transformer_model (Transformer): The trained Transformer model.
+        start_token_idx (int): Index of the start token in the vocabulary.
+        end_token_idx (int): Index of the end token in the vocabulary.
+        max_sequence_length (int): Maximum length of the generated sequence. Defaults to 100.
+        """
+        super().__init__()
+        self.transformer_model = transformer_model
+        self.start_token_idx = start_token_idx
+        self.end_token_idx = end_token_idx
+        self.max_sequence_length = max_sequence_length
+
+    @tf.function(input_signature=[tf.TensorSpec(shape=[None], dtype=tf.int32)])
+    def __call__(self, seed_input):
+        """
+        Generate a sequence given a seed input.
+
+        Args:
+        seed_input (tf.Tensor): Seed input tensor of shape (batch_size, seq_len).
 
         Returns:
-            Tensor of shape (batch_size, max_length) - the generated sequence.
+        tf.Tensor: Generated sequence tensor of shape (batch_size, seq_len).
         """
-        # Initialize the generated sequence with the start token
-        generated_sequence = tf.TensorArray(dtype=tf.int64, size=max_length)
-        generated_sequence = generated_sequence.write(0, start_token)
+        batch_size = tf.shape(seed_input)[0]
+        current_input = seed_input
 
-        # Initialize input_sequence with start_token
-        input_sequence = tf.expand_dims(start_token, 1)  # (batch_size, 1)
+        for _ in tf.range(self.max_sequence_length):
+            # Pass the current input through the transformer model
+            output = self.transformer_model(current_input)
 
-        for i in tf.range(1, max_length):
-            # Combine encoded_context and input_sequence for the call method
-            inputs = tf.concat(
-                [
-                    tf.expand_dims(context, axis=1),
-                    tf.expand_dims(input_sequence, axis=1),
-                ],
-                axis=1,
+            # Take the last token from the output
+            last_token = output[:, -1:, :]
+
+            # Sample the next token probabilities
+            next_token_probs = tf.squeeze(last_token, axis=1)
+
+            # Sample the next token indices
+            next_token_idx = tf.random.categorical(
+                next_token_probs, num_samples=1, dtype=tf.int32
             )
 
-            # Pass the combined input through the transformer
-            logits = self.transformer_model.call(inputs)
+            # Concatenate the next token indices to the current input
+            current_input = tf.concat([current_input, next_token_idx], axis=-1)
 
-            # Get the logits for the last position
-            next_token_logits = logits[:, -1, :]  # (batch_size, target_vocab_size)
+            # Check if the end token is generated for all sequences
+            if tf.reduce_all(tf.equal(next_token_idx, self.end_token_idx)):
+                break
 
-            # Predict the next token
-            next_token = tf.argmax(
-                next_token_logits, axis=-1, output_type=tf.int64
-            )  # (batch_size,)
+        # Remove the start token from the generated sequences
+        generated_sequences = current_input[:, 1:]
 
-            # Append the next token to the input sequence
-            input_sequence = tf.concat(
-                [input_sequence, tf.expand_dims(next_token, axis=1)], axis=-1
-            )  # (batch_size, i+1)
-
-            # Write the next token to the generated sequence
-            generated_sequence = generated_sequence.write(i, next_token)
-
-        # Convert the generated sequence to a tensor
-        generated_sequence = tf.transpose(
-            generated_sequence.stack()
-        )  # (batch_size, max_length)
-
-        return generated_sequence
+        return generated_sequences

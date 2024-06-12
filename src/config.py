@@ -25,7 +25,7 @@ default_config = {
     "dff": 256,
     "dropout_rate": 0.1,
     "batch_size": 8,
-    "element_per_epoch": 50_000,
+    "element_per_epoch": 100_000,
     "pipline_buffer": 1_000,
     "sequence_length": 1000,
     "input_vocab_size": 300,

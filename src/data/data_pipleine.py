@@ -59,14 +59,13 @@ class DataPipline:
         self.path_to_vocab: str = path_to_vocab
         self.adapt_steps: int = adapt_steps
 
-        input_processor, output_processor = self._create_preprocessors()
-        self.input_processor: DataProcessor = input_processor
-        self.output_processor: DataProcessor = output_processor
+        self._create_preprocessors()
 
         self.dataset = self._prepare_dataset()
 
     def get_dataset(
-        self, validation_size: int | None
+        self,
+        validation_size: int | None = None,
     ) -> Tuple[tf_data.Dataset, tf_data.Dataset] | tf_data.Dataset:
         """
         Returns the dataset for training and validation.
@@ -90,7 +89,7 @@ class DataPipline:
 
         return (train_data, val_data)
 
-    def _create_preprocessors(self) -> Tuple[DataProcessor, DataProcessor]:
+    def _create_preprocessors(self):
         input_dataset = tf_data.experimental.CsvDataset(
             self.dataset_path,
             record_defaults=[tf.string],
@@ -108,38 +107,36 @@ class DataPipline:
         )
         output_processor: DataProcessor = BertProcessor()
 
-        return input_processor, output_processor
+        self.input_processor: DataProcessor = input_processor
+        self.output_processor: DataProcessor = output_processor
 
     def _prepare_dataset(self) -> tf_data.Dataset:
         @tf.function
         def tokenize(x, y):
+            x = self.input_processor.preprocess(x)
             x = self.input_processor.tokenize(x)
             y = self.output_processor.preprocess(y)
             y = self.output_processor.tokenize(y)
 
             return x, y
 
-        dataset = (
-            tf_data.experimental.CsvDataset(
-                self.dataset_path,
-                record_defaults=[tf.string, tf.string],
-                buffer_size=self.pipline_buffer,
-                select_cols=[0, 1],
-            )
-            .batch(
-                self.batch_size,
-                drop_remainder=True,
-                num_parallel_calls=tf_data.AUTOTUNE,
-            )
-            .map(tokenize, num_parallel_calls=tf_data.AUTOTUNE)
-            .cache()
-            .flat_map(lambda x, y: seq_to_input(x, y, self.sequence_length))
-            .cache()
-            .batch(
-                self.batch_size,
-                drop_remainder=True,
-                num_parallel_calls=tf_data.AUTOTUNE,
-            )
+        dataset = tf_data.experimental.CsvDataset(
+            self.dataset_path,
+            record_defaults=[tf.string, tf.string],
+            buffer_size=self.pipline_buffer,
+            select_cols=[0, 1],
+        )
+
+        dataset = dataset.map(tokenize, num_parallel_calls=tf_data.AUTOTUNE)
+
+        dataset = dataset.flat_map(
+            lambda x, y: seq_to_input(x, y, self.sequence_length)
+        )
+
+        dataset = dataset.batch(
+            self.batch_size,
+            drop_remainder=True,
+            num_parallel_calls=tf_data.AUTOTUNE,
         )
 
         return dataset
